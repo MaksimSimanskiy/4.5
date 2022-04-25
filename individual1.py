@@ -28,7 +28,6 @@ def get_shop(file_name: str, name: str, product: str, price: int) -> list:
         'product': product,
         'price': price,
     })
-
     with open(file_name, "w", encoding="utf-8") as fout:
         json.dump(shops_load, fout, ensure_ascii=False, indent=4)
     return shops_load
