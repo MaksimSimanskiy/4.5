@@ -10,7 +10,7 @@ import json
 import os
 
 
-def get_shop(shops: list[dict[str, str, int]], name: str, product: str, price: int) -> list[dict]:
+def get_shop(shops: list[dict[str, str, int]], name: str, product: str, price: int) -> list[dict[str, str, int]]:
     shops.append({
         'name': name,
         'product': product,
