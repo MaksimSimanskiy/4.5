@@ -10,7 +10,7 @@ import json
 import os
 
 
-def get_shop(shops: list[dict], name: str, product: str, price: int) -> list[dict]:
+def get_shop(shops: list[dict[str, str, int]], name: str, product: str, price: int) -> list[dict]:
     shops.append({
         'name': name,
         'product': product,
@@ -19,7 +19,7 @@ def get_shop(shops: list[dict], name: str, product: str, price: int) -> list[dic
     return shops
 
 
-def display_shops(shops: list) -> None:
+def display_shops(shops: list[dict[str, str, int]]) -> None:
     """
     Отображает данные о товаре в виде таблицы и
     Сортирует данные, по названию маганзина
@@ -55,7 +55,7 @@ def display_shops(shops: list) -> None:
             print(line)
 
 
-def select_shops(shops: list, name: str) -> None:
+def select_shops(shops: list[dict[str, str, int]], name: str) -> None:
     """
     По заданому магазину находит товары, находящиеся в нем,
     если магазина нет - показывает соответсвующее сообщение
@@ -74,13 +74,13 @@ def select_shops(shops: list, name: str) -> None:
             print("Такого магазина нет")
 
 
-def save_shops(file_name: str, shops: list) -> None:
+def save_shops(file_name: str, shops: list[dict[str, str, int]]) -> None:
     with open(file_name, "w", encoding="utf-8") as fout:
         json.dump(shops, fout, ensure_ascii=False, indent=4)
         print("Данные сохранены")
 
 
-def load_shops(file_name) -> list[dict]:
+def load_shops(file_name) -> list[dict[str, str, int]]:
     with open(file_name, "r", encoding="utf-8") as fin:
         loadfile: list = json.load(fin)
     return loadfile
@@ -150,7 +150,7 @@ def main(command_line=None):
     args = parser.parse_args(command_line)
     is_dirty = False
     if os.path.exists(args.filename):
-        shops: list = load_shops(args.filename)
+        shops: list[dict[str, str, int]] = load_shops(args.filename)
     else:
         shops = []
     if args.command == "add":
