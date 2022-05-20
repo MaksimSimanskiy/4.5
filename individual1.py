@@ -5,141 +5,172 @@
 Выполнить проверку программы с помощью утилиты mypy
 """
 
-from dataclasses import dataclass, field
-import sys
-from typing import List
+import argparse
+import json
+import os
+from typing import TypedDict
 
 
-@dataclass(frozen=True)
-class Shops:
+class shops_dict(TypedDict):
     name: str
     product: str
     price: int
 
 
-@dataclass
-class Store:
-    shops: List[Shops] = field(default_factory=lambda: [])
+def get_shop(shops: list[shops_dict], name: str, product: str, price: int) -> list[shops_dict]:
+    shops.append({
+        'name': name,
+        'product': product,
+        'price': price,
+    })
+    return shops
 
-    def add(self, name: str, product: str, price: int) -> None:
-        self.shops.append(
-            Shops(
-                name=name,
-                product=product,
-                price=price
-            )
-        )
-        self.shops.sort(key=lambda Shops: Shops.name)
 
-    def __str__(self) -> str:
-        # Заголовок таблицы.
-        table = []
+def display_shops(shops: list[shops_dict]) -> None:
+    """
+    Отображает данные о товаре в виде таблицы и
+    Сортирует данные, по названию маганзина
+    """
+    if shops:
         line = '+-{}-+-{}-+-{}-+-{}-+'.format(
             '-' * 4,
             '-' * 30,
-            '-' * 20,
-            '-' * 8
+            '-' * 8,
+            '-' * 20
         )
-        table.append(line)
-        table.append(
+        print(line)
+        print(
             '| {:^4} | {:^30} | {:^20} | {:^8} |'.format(
                 "No",
-                "Магазин.",
+                "Название.",
                 "Товар",
                 "Цена"
             )
         )
-        table.append(line)
-        for idx, Shops in enumerate(self.shops, 1):
-            table.append(
+        print(line)
+        for idx, shop in enumerate(shops, 1):
+            print(
                 '| {:>4} | {:<30} | {:<20} | {:>8} |'.format(
+
                     idx,
-                    Shops.name,
-                    Shops.product,
-                    Shops.price
+                    shop.get('name', ''),
+                    shop.get('product', ''),
+                    shop.get('price', 0)
+
                 )
             )
-        table.append(line)
-        return '\n'.join(table)
+            print(line)
 
-    def select(self, name: str) -> None:
-        cout: int = 0
-        for i, shop in enumerate(self.shops, 1):
-            if (shop.name == name):
-                cout +=1
-                print(
-                    ' |{} -  {:<5} |{} -  {:<5} |'.format('product',
-                        shop.product,'price',
-                        shop.price
-                    )
+
+def select_shops(shops: list[shops_dict], name: str) -> None:
+    """
+    По заданому магазину находит товары, находящиеся в нем,
+    если магазина нет - показывает соответсвующее сообщение
+    """
+    cout: int = 0
+    for shop in shops:
+        if (shop.get('name') == name):
+            cout = 1
+            print(
+                ' | {:<5} | {:<5} '.format(
+                    shop.get('product', ''),
+                    shop.get('price', 0),
                 )
-        if(cout == 0):
+            )
+        elif cout == 0:
             print("Такого магазина нет")
 
-    def load(self, filename: str) -> None:
-        with open(filename, 'r', encoding='utf8') as fin:
-            xml: str = fin.read()
-            parser = ET.XMLParser(encoding="utf8")
-            tree = ET.fromstring(xml, parser=parser)
-            self.shops = []
-            for shop_element in tree:
-                name, product, price = None, None, None
-                for element in shop_element:
-                    if element.tag == 'name':
-                        name = element.text
-                    elif element.tag == 'product':
-                        product = element.text
-                    elif element.tag == 'price':
-                        price = int(element.text)
-                    if name is not None and product is not None \
-                            and price is not None:
-                        self.shops.append(
-                            Shops(
-                                name=name,
-                                product=product,
-                                price=price
-                            )
-                        )
 
+def save_shops(file_name: str, shops: list[shops_dict]) -> None:
+    with open(file_name, "w", encoding="utf-8") as fout:
+        json.dump(shops, fout, ensure_ascii=False, indent=4)
+        print("Данные сохранены")
+
+
+def load_shops(file_name) -> list[shops_dict]:
+    with open(file_name, "r", encoding="utf-8") as fin:
+        loadfile: list = json.load(fin)
+    return loadfile
+
+
+def main(command_line=None) -> None:
+    file_parser = argparse.ArgumentParser(add_help=False)
+    file_parser.add_argument(
+        "filename",
+        action="store",
+        help="The data file name"
+    )
+    parser = argparse.ArgumentParser("shops")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s 0.1.0"
+    )
+    subparsers = parser.add_subparsers(dest="command")
+    # Создать субпарсер для добавления магазина.
+    add = subparsers.add_parser(
+        "add",
+        parents=[file_parser],
+        help="Add a new product"
+    )
+    add.add_argument(
+        "-n",
+        "--name",
+        action="store",
+        required=True,
+        help="The shop's name"
+    )
+    add.add_argument(
+        "-p",
+        "--product",
+        action="store",
+        help="The shop's product"
+    )
+    add.add_argument(
+        "-pr",
+        "--price",
+        action="store",
+        type=int,
+        required=True,
+        help="The price of product"
+    )
+    _ = subparsers.add_parser(
+        "display",
+        parents=[file_parser],
+        help="Display all product"
+    )
+    # Создать субпарсер для выбора работников.
+    select = subparsers.add_parser(
+        "select",
+        parents=[file_parser],
+        help="Select the shops"
+    )
+    select.add_argument(
+        "-s",
+        "--selected shop",
+        required=True,
+        help="The selected shop product"
+    )
+    args = parser.parse_args(command_line)
+    is_dirty = False
+    if os.path.exists(args.filename):
+        shops: list[shops_dict] = load_shops(args.filename)
+    else:
+        shops = []
+    if args.command == "add":
+        shops = get_shop(
+            shops,
+            args.name,
+            args.product,
+            args.price
+        )
+        is_dirty = True
+    elif args.command == 'display':
+        display_shops(shops)
+    elif args.command == 'select ':
+        select_shops(shops, args.name)
+    if is_dirty:
+        save_shops(args.filename, shops)
 
 if __name__ == '__main__':
-    Store = Store()
-    # Организовать бесконечный цикл запроса команд.
-    while True:
-        # Запросить команду из терминала.
-        command = input(">>> ").lower()
-        # Выполнить действие в соответствие с командой.
-        if command == 'exit':
-            break
-        elif command == 'add':
-            # Запросить данные
-            name = input("Название магазина? ")
-            product = input("Товар? ")
-            price = int(input("Цена? "))
-            Store.add(name, product, price)
-        elif command == 'list':
-            # Вывести список.
-            print(Store)
-        elif command.startswith('select '):
-            parts = command.split(maxsplit=1)
-            print(parts[1])
-            selected = Store.select(parts[1])
-        elif command.startswith('load '):
-            parts = command.split(maxsplit=1)
-            Store.load(parts[1])
-        elif command.startswith('save '):
-            # Разбить команду на части для имени файла.
-            parts = command.split(maxsplit=1)
-            # Сохранить данные в файл.
-            Store.save(parts[1])
-        elif command == 'help':
-            print("Список команд:\n")
-            print("add - добавить магазин;")
-            print("list - вывести список магазинов;")
-            print("select <магазин> - вывести товары из магазина;")
-            print("load <имя_файла> - загрузить данные из файла;")
-            print("save <имя_файла> - сохранить данные в файл;")
-            print("help - отобразить справку;")
-            print("exit - завершить работу с программой.")
-        else:
-            print(f"Неизвестная команда {command}", file=sys.stderr)
+    main()
